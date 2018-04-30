@@ -20,7 +20,14 @@ mkdir -p "${DEST}/i686"
 chmod 755 ${FILE}
 ./${FILE} -y -S -R -d "${DEST}/i686"
 
-mv "${DEST}/i686/sysroots/x86_64-pokysdk-linux" "${DEST}/i686/sysroots/pokysdk"
-cd "${DEST}/i686"
-sed -i 's/\/x86_64-pokysdk-linux\//\/pokysdk\//g' relocate_sdk.sh
+if [ "$ARCH" = "x86_64" ]; then
+    mv "${DEST}/i686/sysroots/x86_64-pokysdk-linux" "${DEST}/i686/sysroots/pokysdk"
+    cd "${DEST}/i686"
+    sed -i 's/\/x86_64-pokysdk-linux\//\/pokysdk\//g' relocate_sdk.sh
+else
+    mv "${DEST}/i686/sysroots/core2-32-poky-linux" "${DEST}/i686/sysroots/pokysdk"
+    cd "${DEST}/i686"
+    sed -i 's/\/core2-32-poky-linux\//\/pokysdk\//g' relocate_sdk.sh
+fi
+
 ./relocate_sdk.sh
