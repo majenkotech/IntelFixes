@@ -18,4 +18,5 @@ mkdir -p "${DEST}"
 tar -C "${DEST}" -jxf ${FILE}
 cd "${DEST}/i586"
 sed -i 's/-perm +111/-perm \/111/g' install_script.sh
+sed -i 's/^#!\/usr\/bin\/env python$/#!\/usr\/bin\/env python2/g' relocate_sdk.py
 ./install_script.sh
