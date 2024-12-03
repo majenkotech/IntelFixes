@@ -8,7 +8,8 @@ fi
 
 echo "Arch: $ARCH"
 
-URL=https://downloadmirror.intel.com/24619/eng/${FILE}
+
+URL=https://github.com/majenkotech/IntelFixes/releases/download/0.0.0-archive/${FILE}
 DEST=${HOME}/.arduino15/packages/Intel/tools/i586-poky-linux-uclibc/1.6.2+1.0/
 
 wget -c ${URL}
