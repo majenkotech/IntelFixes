@@ -17,7 +17,7 @@ wget -c ${URL}
 rm -rf "${DEST}/i586"
 mkdir -p "${DEST}"
 tar -C "${DEST}" -jxf ${FILE}
+cp relocate_sdk_py3.py "${DEST}/i586/relocate_sdk.py"
 cd "${DEST}/i586"
 sed -i 's/-perm +111/-perm \/111/g' install_script.sh
-sed -i 's/^#!\/usr\/bin\/env python$/#!\/usr\/bin\/env python2/g' relocate_sdk.py
 ./install_script.sh
