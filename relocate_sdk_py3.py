@@ -95,7 +95,7 @@ def change_interpreter(elf_file_name):
             if fname.startswith("/lib/") or fname.startswith("/lib64/") or fname.startswith("/lib32/") or fname.startswith("/usr/lib32/") or fname.startswith("/usr/lib32/") or fname.startswith("/usr/lib64/"):
                 break
             if (len(new_dl_path) >= p_filesz):
-                print "ERROR: could not relocate %s, interp size = %i and %i is needed." % (elf_file_name, p_memsz, len(new_dl_path) + 1)
+                print("ERROR: could not relocate %s, interp size = %i and %i is needed." % (elf_file_name, p_memsz, len(new_dl_path) + 1))
                 break
             dl_path = new_dl_path + "\0" * (p_filesz - len(new_dl_path))
             f.seek(p_offset)
@@ -196,13 +196,13 @@ for e in executables_list:
 
     try:
         f = open(e, "r+b")
-    except IOError, ioex:
+    except IOError as ioex:
         if ioex.errno == errno.ETXTBSY:
-            print("Could not open %s. File used by another process.\nPlease "\
+            print(("Could not open %s. File used by another process.\nPlease "\
                   "make sure you exit all processes that might use any SDK "\
-                  "binaries." % e)
+                  "binaries." % e))
         else:
-            print("Could not open %s: %s(%d)" % (e, ioex.strerror, ioex.errno))
+            print(("Could not open %s: %s(%d)" % (e, ioex.strerror, ioex.errno)))
         sys.exit(-1)
 
     arch = get_arch()
