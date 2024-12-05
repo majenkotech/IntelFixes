@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #
 # Copyright (c) 2012 Intel Corporation
 #
@@ -31,12 +31,13 @@ import os
 import re
 import errno
 
-old_prefix = re.compile("/opt/clanton-tiny/1\.4\.2")
+old_prefix = re.compile(b"/opt/clanton-tiny/1\.4\.2")
+
 
 def get_arch():
     f.seek(0)
-    e_ident =f.read(16)
-    ei_mag0,ei_mag1_3,ei_class = struct.unpack("<B3sB11x", e_ident)
+    e_ident = f.read(16)
+    ei_mag0, ei_mag1_3, ei_class = struct.unpack("<B3sB11x", e_ident)
 
     if (ei_mag0 != 0x7f and ei_mag1_3 != "ELF") or ei_class == 0:
         return 0
@@ -46,9 +47,10 @@ def get_arch():
     elif ei_class == 2:
         return 64
 
+
 def parse_elf_header():
     global e_type, e_machine, e_version, e_entry, e_phoff, e_shoff, e_flags,\
-           e_ehsize, e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx
+        e_ehsize, e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx
 
     f.seek(0)
     elf_header = f.read(64)
@@ -63,8 +65,9 @@ def parse_elf_header():
         hdr_size = 64
 
     e_type, e_machine, e_version, e_entry, e_phoff, e_shoff, e_flags,\
-    e_ehsize, e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx =\
+        e_ehsize, e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx =\
         struct.unpack(hdr_fmt, elf_header[16:hdr_size])
+
 
 def change_interpreter(elf_file_name):
     if arch == 32:
@@ -73,7 +76,7 @@ def change_interpreter(elf_file_name):
         ph_fmt = "<IIQQQQQQ"
 
     """ look for PT_INTERP section """
-    for i in range(0,e_phnum):
+    for i in range(0, e_phnum):
         f.seek(e_phoff + i * e_phentsize)
         ph_hdr = f.read(e_phentsize)
         if arch == 32:
@@ -83,7 +86,7 @@ def change_interpreter(elf_file_name):
         else:
             # 64bit
             p_type, p_flags, p_offset, p_vaddr, p_paddr, \
-            p_filesz, p_memsz, p_align = struct.unpack(ph_fmt, ph_hdr)
+                p_filesz, p_memsz, p_align = struct.unpack(ph_fmt, ph_hdr)
 
         """ change interpreter """
         if p_type == 3:
@@ -92,15 +95,19 @@ def change_interpreter(elf_file_name):
             # External SDKs with mixed pre-compiled binaries should not get
             # relocated so look for some variant of /lib
             fname = f.read(11)
-            if fname.startswith("/lib/") or fname.startswith("/lib64/") or fname.startswith("/lib32/") or fname.startswith("/usr/lib32/") or fname.startswith("/usr/lib32/") or fname.startswith("/usr/lib64/"):
+            if fname.startswith(b"/lib/") or fname.startswith(b"/lib64/") or \
+               fname.startswith(b"/lib32/") or fname.startswith(b"/usr/lib32/") or \
+               fname.startswith(b"/usr/lib32/") or fname.startswith(b"/usr/lib64/"):
                 break
             if (len(new_dl_path) >= p_filesz):
-                print("ERROR: could not relocate %s, interp size = %i and %i is needed." % (elf_file_name, p_memsz, len(new_dl_path) + 1))
+                print("ERROR: could not relocate %s, interp size = %i and %i is needed."
+                      % (elf_file_name, p_memsz, len(new_dl_path) + 1))
                 break
-            dl_path = new_dl_path + "\0" * (p_filesz - len(new_dl_path))
+            dl_path = new_dl_path + b"\0" * (p_filesz - len(new_dl_path))
             f.seek(p_offset)
             f.write(dl_path)
             break
+
 
 def change_dl_sysdirs():
     if arch == 32:
@@ -122,47 +129,48 @@ def change_dl_sysdirs():
     sysdirs = sysdirs_len = ""
 
     """ change ld.so.cache path and default libs path for dynamic loader """
-    for i in range(0,e_shnum):
+    for i in range(0, e_shnum):
         f.seek(e_shoff + i * e_shentsize)
         sh_hdr = f.read(e_shentsize)
 
         sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size, sh_link,\
             sh_info, sh_addralign, sh_entsize = struct.unpack(sh_fmt, sh_hdr)
 
-        name = sh_strtab[sh_name:sh_strtab.find("\0", sh_name)]
+        name = sh_strtab[sh_name:sh_strtab.find(b"\0", sh_name)]
 
         """ look only into SHT_PROGBITS sections """
         if sh_type == 1:
             f.seek(sh_offset)
             """ default library paths cannot be changed on the fly because  """
             """ the string lengths have to be changed too.                  """
-            if name == ".sysdirs":
+            if name == b".sysdirs":
                 sysdirs = f.read(sh_size)
                 sysdirs_off = sh_offset
                 sysdirs_sect_size = sh_size
-            elif name == ".sysdirslen":
+            elif name == b".sysdirslen":
                 sysdirslen = f.read(sh_size)
                 sysdirslen_off = sh_offset
-            elif name == ".ldsocache":
+            elif name == b".ldsocache":
                 ldsocache_path = f.read(sh_size)
                 new_ldsocache_path = old_prefix.sub(new_prefix, ldsocache_path)
                 # pad with zeros
-                new_ldsocache_path += "\0" * (sh_size - len(new_ldsocache_path))
+                new_ldsocache_path += b"\0" * \
+                    (sh_size - len(new_ldsocache_path))
                 # write it back
                 f.seek(sh_offset)
                 f.write(new_ldsocache_path)
 
     if sysdirs != "" and sysdirslen != "":
-        paths = sysdirs.split("\0")
-        sysdirs = ""
-        sysdirslen = ""
+        paths = sysdirs.split(b"\0")
+        sysdirs = b""
+        sysdirslen = b""
         for path in paths:
             """ exit the loop when we encounter first empty string """
-            if path == "":
+            if path == b"":
                 break
 
             new_path = old_prefix.sub(new_prefix, path)
-            sysdirs += new_path + "\0"
+            sysdirs += new_path + b"\0"
 
             if arch == 32:
                 sysdirslen += struct.pack("<L", len(new_path))
@@ -170,7 +178,7 @@ def change_dl_sysdirs():
                 sysdirslen += struct.pack("<Q", len(new_path))
 
         """ pad with zeros """
-        sysdirs += "\0" * (sysdirs_sect_size - len(sysdirs))
+        sysdirs += b"\0" * (sysdirs_sect_size - len(sysdirs))
 
         """ write the sections back """
         f.seek(sysdirs_off)
@@ -183,27 +191,38 @@ def change_dl_sysdirs():
 if len(sys.argv) < 4:
     sys.exit(-1)
 
-new_prefix = sys.argv[1]
-new_dl_path = sys.argv[2]
+# In python > 3, strings may also contain Unicode characters. So, convert
+# them to bytes
+if sys.version_info < (3,):
+    new_prefix = sys.argv[1]
+    new_dl_path = sys.argv[2]
+else:
+    new_prefix = sys.argv[1].encode()
+    new_dl_path = sys.argv[2].encode()
+
 executables_list = sys.argv[3:]
 
 for e in executables_list:
     perms = os.stat(e)[stat.ST_MODE]
-    if os.access(e, os.W_OK|os.R_OK):
+    if os.access(e, os.W_OK | os.R_OK):
         perms = None
     else:
-        os.chmod(e, perms|stat.S_IRWXU)
+        os.chmod(e, perms | stat.S_IRWXU)
 
     try:
         f = open(e, "r+b")
     except IOError as ioex:
         if ioex.errno == errno.ETXTBSY:
-            print(("Could not open %s. File used by another process.\nPlease "\
-                  "make sure you exit all processes that might use any SDK "\
-                  "binaries." % e))
+            print(("Could not open %s. File used by another process.\nPlease "
+                  "make sure you exit all processes that might use any SDK "
+                   "binaries." % e))
         else:
-            print(("Could not open %s: %s(%d)" % (e, ioex.strerror, ioex.errno)))
+            print(("Could not open %s: %s(%d)" %
+                  (e, ioex.strerror, ioex.errno)))
         sys.exit(-1)
+
+    # Save old size and do a size check at the end. Just a safety measure.
+    old_size = os.path.getsize(e)
 
     arch = get_arch()
     if arch:
@@ -217,3 +236,6 @@ for e in executables_list:
 
     f.close()
 
+    if old_size != os.path.getsize(e):
+        print("New file size for %s is different. Looks like a relocation error!", e)
+        sys.exit(-1)
