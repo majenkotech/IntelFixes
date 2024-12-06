@@ -12,7 +12,7 @@ existing toolkits in your Arduino installation (Note: you need to "fail" to inst
 the Arduino packages *first*). It makes adjustments to the installations as needed
 to allow them to then work.
 
-**Note:** Requires Python 2 to be installed (sudo apt install python2)
+**Note:** Requires Python 2 to be installed (`sudo apt install python2`), for edison only.
 
 **Another note:** Edison script is currently broken - it can't find the download file.
 Maybe it's redundant now?
